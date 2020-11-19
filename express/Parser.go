@@ -14,6 +14,8 @@ const (
 	ComparePattern=`^(`+VarPattern+`)\s*(`+CompareSign+`)\s*(`+VarPattern+`)\s*$`
 )
 
+type Express string
+
 //根据比较符 ，获取token
 func getCompareToken(sign string) string{
 	for index,item:=range strings.Split(CompareSign,"|"){
@@ -34,14 +36,14 @@ func parseToken(token string) string  {
 
 
 //执行表达式
-func Exec(expr string,data map[string]interface{}) (string,error){
+func Exec(express Express,data map[string]interface{}) (string,error){
 	tpl:=template.New("expr").Funcs(map[string]interface{}{
 		"echo": func(params ...interface{}) interface{} {
 			return fmt.Sprintf("echo:%v",params[0])
 		},
 	})
 
-	t,err:= tpl.Parse(fmt.Sprintf("{{%s}}",Comparable(expr).filter()))
+	t,err:= tpl.Parse(fmt.Sprintf("{{%s}}",express))
 	if err!=nil{
 		return "",err
 	}
