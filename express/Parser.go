@@ -36,7 +36,7 @@ func parseToken(token string) string  {
 
 
 //执行表达式
-func Exec(express Express,data map[string]interface{}) (string,error){
+func Exec(express Express, data map[string]interface{}) (string,error){
 	tpl:=template.New("expr").Funcs(map[string]interface{}{
 		"echo": func(params ...interface{}) interface{} {
 			return fmt.Sprintf("echo:%v",params[0])
