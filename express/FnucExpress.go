@@ -25,14 +25,14 @@ func init()  {
 }
 
 // 执行表达式
-func Run(express string)  {
+func Run(express string) Result {
 	is:=antlr.NewInputStream(express)
 	lexer:=fnucExpr.NewFnucExprLexer(is)
 	ts := antlr.NewCommonTokenStream(lexer, antlr.TokenDefaultChannel)
 	p := fnucExpr.NewFnucExprParser(ts)
 	lis:=&FuncListener{}
 	antlr.ParseTreeWalkerDefault.Walk(lis, p.Start())
-	lis.Run()
+	return lis.Run()
 }
 
 // 设置函数容器
@@ -79,15 +79,19 @@ func (this *FuncListener) ExitMethodCall(ctx *fnucExpr.MethodCallContext) {
 	this.methodName = ctx.GetStart().GetText()
 }
 
-func (this *FuncListener) Run() {
+func (this *FuncListener) Run() Result {
+	if funcMap == nil {
+		panic("exprMap required")
+	}
 	switch this.execType {
 	case 0:
 		if f,ok:=funcMap[this.funcName];ok{
 			v:=reflect.ValueOf(f)
 			if v.Kind()==reflect.Func{
-				v.Call(this.args)
+				return result(v.Call(this.args))
 			}
 		}
+		break
 	case 1:
 		ms:=strings.Split(this.methodName,".")
 		if obj,ok:=funcMap[ms[0]];ok {
@@ -98,9 +102,8 @@ func (this *FuncListener) Run() {
 					if method:=current.MethodByName(ms[i]);!method.IsValid(){
 						panic("method error:"+ms[i])
 					}else{
-						method.Call(this.args)
+						return result(method.Call(this.args))
 					}
-					break
 				}
 				field:=this.findField(ms[i],current)
 				if field.IsValid(){
@@ -110,10 +113,11 @@ func (this *FuncListener) Run() {
 				}
 			}
 		}
+		break
 	default:
 		log.Println("nothing to do")
 	}
-
+	return newResult()
 }
 
 func(this *FuncListener) findField (method string,v reflect.Value) reflect.Value  {

@@ -58,11 +58,12 @@ func main()  {
 	antlr.ParseTreeWalkerDefault.Walk(lis, p.Start())
 	lis.Run()
 	*/
-	express.SetFuncMap("test", func(name string,age int64) {
+	express.SetFuncMap("test", func(name string,age int64) string {
 		log.Println("this is test11", name, age)
+		return "fff"
 	})
 	express.SetFuncMap("User", &User{Adm:&Admin{}})
-	express.Run("test('ddd',56)")
+	fmt.Println(express.Run("test('ddd',56)"))
 }
 
 type FuncListener struct {
