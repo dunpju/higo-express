@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/antlr/antlr4/runtime/Go/antlr"
-	"github.com/dengpju/higo-express/express"
-	"github.com/dengpju/higo-express/express/fnucExpr"
+	"github.com/dunpju/higo-express/express"
+	"github.com/dunpju/higo-express/express/fnucExpr"
 	"log"
 	"reflect"
 	"strconv"
@@ -12,15 +12,15 @@ import (
 )
 
 type Me struct {
-
 }
 
-func (this *Me)Age() int {
+func (this *Me) Age() int {
 	return 21
 }
 
 var FuncMap map[string]interface{}
-func main()  {
+
+func main() {
 	/**
 	tpl:=template.New("test").Funcs(map[string]interface{}{
 		"echo": func(params ...interface{}) interface{}{
@@ -42,11 +42,11 @@ func main()  {
 	*/
 	//fmt.Println(express.Exec(".me.Age", map[string]interface{}{"myage":19.0,"me":&Me{}}))
 
-	FuncMap= map[string]interface{}{
-		"test": func(name string,age int64) {
+	FuncMap = map[string]interface{}{
+		"test": func(name string, age int64) {
 			log.Println("this is test", name, age)
 		},
-		"User":&User{Adm:&Admin{}},
+		"User": &User{Adm: &Admin{}},
 	}
 
 	/**
@@ -58,11 +58,11 @@ func main()  {
 	antlr.ParseTreeWalkerDefault.Walk(lis, p.Start())
 	lis.Run()
 	*/
-	express.SetFuncMap("test", func(name string,age int64) string {
+	express.SetFuncMap("test", func(name string, age int64) string {
 		log.Println("this is test11", name, age)
 		return "fff"
 	})
-	express.SetFuncMap("User", &User{Adm:&Admin{}})
+	express.SetFuncMap("User", &User{Adm: &Admin{}})
 	fmt.Println(express.Run("test('ddd',56)"))
 }
 
@@ -71,77 +71,77 @@ type FuncListener struct {
 	funcName   string
 	args       []reflect.Value
 	methodName string // 方法名 eg: user.abc.bcd.age()
-	execType   uint8 // 执行类型 0代表函数(默认值) 1代表struct执行
+	execType   uint8  // 执行类型 0代表函数(默认值) 1代表struct执行
 }
 
 func (this *FuncListener) ExitFuncArgs(ctx *fnucExpr.FuncArgsContext) {
-	for i:=0;i<ctx.GetChildCount();i++{
-		token:=ctx.GetChild(i).GetPayload().(*antlr.CommonToken)
+	for i := 0; i < ctx.GetChildCount(); i++ {
+		token := ctx.GetChild(i).GetPayload().(*antlr.CommonToken)
 		var value reflect.Value
-		switch  token.GetTokenType() {
+		switch token.GetTokenType() {
 		case fnucExpr.FnucExprLexerStringArg:
-			stringArg:=strings.Trim(token.GetText(),"'")
-			value=reflect.ValueOf(stringArg)
+			stringArg := strings.Trim(token.GetText(), "'")
+			value = reflect.ValueOf(stringArg)
 			break
 		case fnucExpr.FnucExprLexerIntArg:
-			v,err:=strconv.ParseInt(token.GetText(),10,64)
-			if err!=nil{
+			v, err := strconv.ParseInt(token.GetText(), 10, 64)
+			if err != nil {
 				panic("parse int64 error")
 			}
-			value=reflect.ValueOf(v)
+			value = reflect.ValueOf(v)
 			break
 		case fnucExpr.FnucExprLexerFloatArg:
-			v,err:=strconv.ParseFloat(token.GetText(),64)
-			if err!=nil{
+			v, err := strconv.ParseFloat(token.GetText(), 64)
+			if err != nil {
 				panic("parse float64 error")
 			}
-			value=reflect.ValueOf(v)
+			value = reflect.ValueOf(v)
 			break
 		default:
 			continue
 		}
-		this.args=append(this.args,value)
+		this.args = append(this.args, value)
 	}
 
 }
 
 func (this *FuncListener) ExitFuncCall(ctx *fnucExpr.FuncCallContext) {
-	this.funcName=ctx.GetStart().GetText()
+	this.funcName = ctx.GetStart().GetText()
 }
 
 func (this *FuncListener) ExitMethodCall(ctx *fnucExpr.MethodCallContext) {
-	this.execType=1
-	this.methodName=ctx.GetStart().GetText()
+	this.execType = 1
+	this.methodName = ctx.GetStart().GetText()
 }
 
 func (this *FuncListener) Run() {
 	switch this.execType {
 	case 0:
-		if f,ok:=FuncMap[this.funcName];ok{
-			v:=reflect.ValueOf(f)
-			if v.Kind()==reflect.Func{
+		if f, ok := FuncMap[this.funcName]; ok {
+			v := reflect.ValueOf(f)
+			if v.Kind() == reflect.Func {
 				v.Call(this.args)
 			}
 		}
 	case 1:
-		ms:=strings.Split(this.methodName,".")
-		if obj,ok:=FuncMap[ms[0]];ok {
-			objv:=reflect.ValueOf(obj)
-			current:=objv
-			for i:=1;i<len(ms);i++{
-				if i==len(ms)-1{//最后一个是方法名
-					if method:=current.MethodByName(ms[i]);!method.IsValid(){
-						panic("method error:"+ms[i])
-					}else{
+		ms := strings.Split(this.methodName, ".")
+		if obj, ok := FuncMap[ms[0]]; ok {
+			objv := reflect.ValueOf(obj)
+			current := objv
+			for i := 1; i < len(ms); i++ {
+				if i == len(ms)-1 { //最后一个是方法名
+					if method := current.MethodByName(ms[i]); !method.IsValid() {
+						panic("method error:" + ms[i])
+					} else {
 						method.Call(this.args)
 					}
 					break
 				}
-				field:=this.findField(ms[i],current)
-				if field.IsValid(){
-					current=field
-				}else{
-					panic("field error:"+ms[i])
+				field := this.findField(ms[i], current)
+				if field.IsValid() {
+					current = field
+				} else {
+					panic("field error:" + ms[i])
 				}
 			}
 		}
@@ -151,21 +151,20 @@ func (this *FuncListener) Run() {
 
 }
 
-func(this *FuncListener) findField (method string,v reflect.Value) reflect.Value  {
-	if v.Kind()==reflect.Ptr{
-		v=v.Elem()
+func (this *FuncListener) findField(method string, v reflect.Value) reflect.Value {
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
 	}
-	if field:=v.FieldByName(method);field.IsValid(){
+	if field := v.FieldByName(method); field.IsValid() {
 		return field
 	}
 	return reflect.Value{}
 }
 
 type Admin struct {
-
 }
 
-func (this *Admin)Abc()  {
+func (this *Admin) Abc() {
 	fmt.Println("abc111")
 }
 
@@ -173,6 +172,6 @@ type User struct {
 	Adm *Admin
 }
 
-func (this *User)Name(name string,age int64)  {
+func (this *User) Name(name string, age int64) {
 	fmt.Println("user name", name, age)
 }
